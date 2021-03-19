@@ -26,7 +26,7 @@ The pretrained model is also available on PyTorch Hub.
 
 ```
 import torch
-model = torch.hub.load('facebookresearch/barlowtwins', 'resnet50')
+model = torch.hub.load('facebookresearch/barlowtwins:main', 'resnet50')
 ```
 
 ### Barlow Twins Training
