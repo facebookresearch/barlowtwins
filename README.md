@@ -54,7 +54,7 @@ python evaluate.py /path/to/imagenet/ /path/to/checkpoint/resnet50.pth --lr-clas
 Train a linear probe on the representations learned by Barlow Twins. Finetune the weights of the resnet and use a subset of the ImageNet training set.
 
 ```
-python evaluate.py /path/to/imagenet/ /path/to/checkpoint/resnet50.pth --weights finetune --train-perc 1 --epochs 20 --lr-backbone 0.002 --lr-classifier 0.5 --weight-decay 0
+python evaluate.py /path/to/imagenet/ /path/to/checkpoint/resnet50.pth --weights finetune --train-perc 1 --epochs 20 --lr-backbone 0.002 --lr-classifier 0.5 --weight-decay 0 --checkpoint-dir ./checkpoint/semisup/
 ```
 
 ### Issues
