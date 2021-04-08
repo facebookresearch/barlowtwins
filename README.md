@@ -61,6 +61,12 @@ python evaluate.py /path/to/imagenet/ /path/to/checkpoint/resnet50.pth --weights
 
 In order to match the code that was used to develop Barlow Twins, we include an additional parameter, `--scale-loss`, that multiplies the loss by a constant factor. We are working on a version that will not require this parameter.
 
+### Community updates
+
+To use multiple nodes without SLURM, see suggestion by Shoaib: https://github.com/facebookresearch/barlowtwins/issues/13#issuecomment-813126587
+
+*Let us know the cool stuff you were able to do with Barlow Twins so that we can advertise it here*
+
 ### License
 
 This project is under the CC-BY-NC 4.0 license. See [LICENSE](LICENSE) for details.
