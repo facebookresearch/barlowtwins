@@ -67,7 +67,7 @@ In order to match the code that was used to develop Barlow Twins, we include an 
 
 - Barlow Twins on CIFAR-10: https://github.com/IgorSusmelj/barlowtwins
 
-*[Let us know](ljng@fb.com,jzb@fb.com,sdeny@fb.com) about all the cool stuff you were able to do with Barlow Twins so that we can advertise it here!*
+*[Let us know](mailto:jzb@fb.com,ljng@fb.com,sdeny@fb.com?subject=[GitHub]%20Barlow%20Twins%20) about all the cool stuff you were able to do with Barlow Twins so that we can advertise it here!*
 
 ### License
 
