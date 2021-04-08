@@ -63,9 +63,11 @@ In order to match the code that was used to develop Barlow Twins, we include an 
 
 ### Community updates
 
-To use multiple nodes without SLURM, see suggestion by Shoaib: https://github.com/facebookresearch/barlowtwins/issues/13#issuecomment-813126587
+- To use multiple nodes without SLURM, see suggestion by Shoaib: https://github.com/facebookresearch/barlowtwins/issues/13#issuecomment-813126587
 
-*Let us know the cool stuff you were able to do with Barlow Twins so that we can advertise it here*
+- Barlow Twins on CIFAR-10: https://github.com/IgorSusmelj/barlowtwins
+
+*Let us know about all the cool stuff you were able to do with Barlow Twins so that we can advertise it here!*
 
 ### License
 
