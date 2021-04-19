@@ -18,9 +18,27 @@ PyTorch implementation of [Barlow Twins](https://arxiv.org/abs/2103.03230).
 
 ### Pretrained Model
 
-| epochs | batch size | acc1 | acc5 | download |
-| --- | --- | --- | --- | --- |
-| 1000 | 2048 | [73.3%](https://dl.fbaipublicfiles.com/barlowtwins/epochs1000_bs2048_lr0.2_lambd0.0051_proj_8192_8192_8192_scale0.024/lincls_0.1/stats.txt) | [91.0%](https://dl.fbaipublicfiles.com/barlowtwins/epochs1000_bs2048_lr0.2_lambd0.0051_proj_8192_8192_8192_scale0.024/lincls_0.1/stats.txt) | [model](https://dl.fbaipublicfiles.com/barlowtwins/epochs1000_bs2048_lr0.2_lambd0.0051_proj_8192_8192_8192_scale0.024/resnet50.pth) ([logs](https://dl.fbaipublicfiles.com/barlowtwins/epochs1000_bs2048_lr0.2_lambd0.0051_proj_8192_8192_8192_scale0.024/stats.txt)) |
+<table>
+  <tr>
+    <th>epochs</th>
+    <th>batch size</th>
+    <th>acc1</th>
+    <th>acc5</th>
+    <th colspan="4">download</th>
+  </tr>
+  <tr>
+    <td>1000</td>
+    <td>2048</td>
+    <td>73.3%</td>
+    <td>91.0%</td>
+    <td><a href="https://dl.fbaipublicfiles.com/barlowtwins/epochs1000_bs2048_lr0.2_lambd0.0051_proj_8192_8192_8192_scale0.024/resnet50.pth">ResNet-50</a></td>
+    <td><a href="https://dl.fbaipublicfiles.com/barlowtwins/epochs1000_bs2048_lr0.2_lambd0.0051_proj_8192_8192_8192_scale0.024/checkpoint.pth">full checkpoint</a></td>
+    <td><a href="https://dl.fbaipublicfiles.com/barlowtwins/epochs1000_bs2048_lr0.2_lambd0.0051_proj_8192_8192_8192_scale0.024/stats.txt">train logs</a></td>
+    <td><a href="https://dl.fbaipublicfiles.com/barlowtwins/epochs1000_bs2048_lr0.2_lambd0.0051_proj_8192_8192_8192_scale0.024/lincls_0.1/stats.txt">val logs</a></td>
+  </tr>
+</table>
+
+You can choose to download either the weights of the pretrained ResNet-50 network or the full checkpoint, which also contains the weights of the projector network and the state of the optimizer. 
 
 The pretrained model is also available on PyTorch Hub.
 
