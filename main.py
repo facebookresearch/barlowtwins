@@ -125,7 +125,6 @@ def main_worker(gpu, args):
             scaler.step(optimizer)
             scaler.update()
             if step % args.print_freq == 0:
-                torch.distributed.reduce(loss.div_(args.world_size), 0)
                 if args.rank == 0:
                     stats = dict(epoch=epoch, step=step, learning_rate=lr,
                                  loss=loss.item(),
