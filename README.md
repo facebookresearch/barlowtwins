@@ -2,7 +2,7 @@ Barlow Twins: Self-Supervised Learning via Redundancy Reduction
 ---------------------------------------------------------------
 
 <p align="center">
-  <img width="500" alt="fig_method" src="https://user-images.githubusercontent.com/1426550/108191270-3c01cb80-7113-11eb-81d0-da34ce9e26fb.png">
+  <img width="500" alt="Screen Shot 2021-04-29 at 6 26 48 AM" src="https://user-images.githubusercontent.com/14848164/116538983-3fa19380-a8b6-11eb-8436-4bfe4cdc5d79.png">
 </p>
 
 PyTorch implementation of [Barlow Twins](https://arxiv.org/abs/2103.03230).
