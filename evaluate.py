@@ -79,22 +79,27 @@ def main_worker(gpu, args):
     torch.backends.cudnn.benchmark = True
 
     model = models.resnet50().cuda(gpu)
-    model.fc = nn.Identity()
     state_dict = torch.load(args.pretrained, map_location='cpu')
-    model.load_state_dict(state_dict)
+    missing_keys, unexpected_keys = model.load_state_dict(state_dict, strict=False)
+    assert missing_keys == ['fc.weight', 'fc.bias'] and unexpected_keys == []
+    model.fc.weight.data.normal_(mean=0.0, std=0.01)
+    model.fc.bias.data.zero_()
     if args.weights == 'freeze':
         model.requires_grad_(False)
-
-    classifier = nn.Linear(2048, 1000).cuda(gpu)
-    classifier.weight.data.normal_(mean=0.0, std=0.01)
-    classifier.bias.data.zero_()
-    classifier = torch.nn.parallel.DistributedDataParallel(classifier, device_ids=[gpu])
+        model.fc.requires_grad_(True)
+    classifier_parameters, model_parameters = [], []
+    for name, param in model.named_parameters():
+        if name in {'fc.weight', 'fc.bias'}:
+            classifier_parameters.append(param)
+        else:
+            model_parameters.append(param)
+    model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[gpu])
 
     criterion = nn.CrossEntropyLoss().cuda(gpu)
 
-    param_groups = [dict(params=classifier.parameters(), lr=args.lr_classifier)]
+    param_groups = [dict(params=classifier_parameters, lr=args.lr_classifier)]
     if args.weights == 'finetune':
-        param_groups.append(dict(params=model.parameters(), lr=args.lr_backbone))
+        param_groups.append(dict(params=model_parameters, lr=args.lr_backbone))
     optimizer = optim.SGD(param_groups, 0, momentum=0.9, weight_decay=args.weight_decay)
     scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, args.epochs)
 
@@ -104,7 +109,7 @@ def main_worker(gpu, args):
                           map_location='cpu')
         start_epoch = ckpt['epoch']
         best_acc = ckpt['best_acc']
-        classifier.load_state_dict(ckpt['classifier'])
+        model.load_state_dict(ckpt['model'])
         optimizer.load_state_dict(ckpt['optimizer'])
         scheduler.load_state_dict(ckpt['scheduler'])
     else:
@@ -154,8 +159,7 @@ def main_worker(gpu, args):
             assert False
         train_sampler.set_epoch(epoch)
         for step, (images, target) in enumerate(train_loader, start=epoch * len(train_loader)):
-            features = model(images.cuda(gpu, non_blocking=True))
-            output = classifier(features)
+            output = model(images.cuda(gpu, non_blocking=True))
             loss = criterion(output, target.cuda(gpu, non_blocking=True))
             optimizer.zero_grad()
             loss.backward()
@@ -179,8 +183,7 @@ def main_worker(gpu, args):
             top5 = AverageMeter('Acc@5')
             with torch.no_grad():
                 for images, target in val_loader:
-                    features = model(images.cuda(gpu, non_blocking=True))
-                    output = classifier(features)
+                    output = model(images.cuda(gpu, non_blocking=True))
                     acc1, acc5 = accuracy(output, target.cuda(gpu, non_blocking=True), topk=(1, 5))
                     top1.update(acc1[0].item(), images.size(0))
                     top5.update(acc5[0].item(), images.size(0))
@@ -192,14 +195,15 @@ def main_worker(gpu, args):
 
         # sanity check
         if args.weights == 'freeze':
-            state_dict = torch.load(args.pretrained, map_location='cpu')
-            for k, v in model.state_dict().items():
-                assert torch.equal(v.cpu(), state_dict[k]), k
+            reference_state_dict = torch.load(args.pretrained, map_location='cpu')
+            model_state_dict = model.module.state_dict()
+            for k in reference_state_dict:
+                assert torch.equal(model_state_dict[k].cpu(), reference_state_dict[k]), k
 
         scheduler.step()
         if args.rank == 0:
             state = dict(
-                epoch=epoch + 1, best_acc=best_acc, classifier=classifier.state_dict(),
+                epoch=epoch + 1, best_acc=best_acc, model=model.state_dict(),
                 optimizer=optimizer.state_dict(), scheduler=scheduler.state_dict())
             torch.save(state, args.checkpoint_dir / 'checkpoint.pth')
 
