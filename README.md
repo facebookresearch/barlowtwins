@@ -83,9 +83,9 @@ In order to match the code that was used to develop Barlow Twins, we include an 
 
 - To use multiple nodes without SLURM, see suggestion by Shoaib: https://github.com/facebookresearch/barlowtwins/issues/13#issuecomment-813126587
 
-- Barlow Twins on CIFAR-10: https://github.com/IgorSusmelj/barlowtwins
+- Barlow Twins on CIFAR-10 (PyTorch): https://github.com/IgorSusmelj/barlowtwins
 
-- An intriguing connection of Barlow Twins with the HSIC independence criterion, and some awesome results on small datasets (CIFAR10, STL10 and Tiny-ImageNet):
+- An intriguing connection of Barlow Twins with the HSIC independence criterion, and some awesome results on small datasets (CIFAR10, STL10 and Tiny-ImageNet) in PyTorch:
 https://github.com/yaohungt/Barlow-Twins-HSIC
 
 - A tensorflow implementation of Barlow Twins on CIFAR-10, by Sayak Paul: https://github.com/sayakpaul/Barlow-Twins-TF
