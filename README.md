@@ -29,12 +29,12 @@ PyTorch implementation of [Barlow Twins](https://arxiv.org/abs/2103.03230).
   <tr>
     <td>1000</td>
     <td>2048</td>
-    <td>73.3%</td>
+    <td>73.5%</td>
     <td>91.0%</td>
-    <td><a href="https://dl.fbaipublicfiles.com/barlowtwins/epochs1000_bs2048_lr0.2_lambd0.0051_proj_8192_8192_8192_scale0.024/resnet50.pth">ResNet-50</a></td>
-    <td><a href="https://dl.fbaipublicfiles.com/barlowtwins/epochs1000_bs2048_lr0.2_lambd0.0051_proj_8192_8192_8192_scale0.024/checkpoint.pth">full checkpoint</a></td>
-    <td><a href="https://dl.fbaipublicfiles.com/barlowtwins/epochs1000_bs2048_lr0.2_lambd0.0051_proj_8192_8192_8192_scale0.024/stats.txt">train logs</a></td>
-    <td><a href="https://dl.fbaipublicfiles.com/barlowtwins/epochs1000_bs2048_lr0.2_lambd0.0051_proj_8192_8192_8192_scale0.024/lincls_0.1/stats.txt">val logs</a></td>
+    <td><a href="https://dl.fbaipublicfiles.com/barlowtwins/ep1000_bs2048_lrw0.2_lrb0.0048_lambd0.0051/resnet50.pth">ResNet-50</a></td>
+    <td><a href="https://dl.fbaipublicfiles.com/barlowtwins/ep1000_bs2048_lrw0.2_lrb0.0048_lambd0.0051/checkpoint.pth">full checkpoint</a></td>
+    <td><a href="https://dl.fbaipublicfiles.com/barlowtwins/ep1000_bs2048_lrw0.2_lrb0.0048_lambd0.0051/stats.txt">train logs</a></td>
+    <td><a href="https://dl.fbaipublicfiles.com/barlowtwins/ep1000_bs2048_lrw0.2_lrb0.0048_lambd0.0051/lincls_0.3/stats.txt">val logs</a></td>
   </tr>
 </table>
 
@@ -54,7 +54,7 @@ Install PyTorch and download ImageNet by following the instructions in the [requ
 Our best model is obtained by running the following command:
 
 ```
-python main.py /path/to/imagenet/ --epochs 1000 --batch-size 2048 --learning-rate 0.2 --lambd 0.0051 --projector 8192-8192-8192 --scale-loss 0.024
+python main.py /path/to/imagenet/
 ```
 
 Training time is approximately 7 days on 16 v100 GPUs.
@@ -64,7 +64,7 @@ Training time is approximately 7 days on 16 v100 GPUs.
 Train a linear probe on the representations learned by Barlow Twins. Freeze the weights of the resnet and use the entire ImageNet training set.
 
 ```
-python evaluate.py /path/to/imagenet/ /path/to/checkpoint/resnet50.pth --lr-classifier 0.1
+python evaluate.py /path/to/imagenet/ /path/to/checkpoint/resnet50.pth --lr-classifier 0.3
 ```
 
 ### Evaluation: Semi-supervised Learning
@@ -72,12 +72,8 @@ python evaluate.py /path/to/imagenet/ /path/to/checkpoint/resnet50.pth --lr-clas
 Train a linear probe on the representations learned by Barlow Twins. Finetune the weights of the resnet and use a subset of the ImageNet training set.
 
 ```
-python evaluate.py /path/to/imagenet/ /path/to/checkpoint/resnet50.pth --weights finetune --train-perc 1 --epochs 20 --lr-backbone 0.002 --lr-classifier 0.5 --weight-decay 0 --checkpoint-dir ./checkpoint/semisup/
+python evaluate.py /path/to/imagenet/ /path/to/checkpoint/resnet50.pth --weights finetune --train-perc 1 --epochs 20 --lr-backbone 0.005 --lr-classifier 0.5 --weight-decay 0 --checkpoint-dir ./checkpoint/semisup/
 ```
-
-### Issues
-
-In order to match the code that was used to develop Barlow Twins, we include an additional parameter, `--scale-loss`, that multiplies the loss by a constant factor. We are working on a version that will not require this parameter.
 
 ### Community Updates
 

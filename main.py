@@ -26,20 +26,20 @@ parser.add_argument('data', type=Path, metavar='DIR',
                     help='path to dataset')
 parser.add_argument('--workers', default=8, type=int, metavar='N',
                     help='number of data loader workers')
-parser.add_argument('--epochs', default=300, type=int, metavar='N',
+parser.add_argument('--epochs', default=1000, type=int, metavar='N',
                     help='number of total epochs to run')
-parser.add_argument('--batch-size', default=4096, type=int, metavar='N',
+parser.add_argument('--batch-size', default=2048, type=int, metavar='N',
                     help='mini-batch size')
-parser.add_argument('--learning-rate', default=0.2, type=float, metavar='LR',
-                    help='base learning rate')
+parser.add_argument('--learning-rate-weights', default=0.2, type=float, metavar='LR',
+                    help='base learning rate for weights')
+parser.add_argument('--learning-rate-biases', default=0.0048, type=float, metavar='LR',
+                    help='base learning rate for biases and batch norm parameters')
 parser.add_argument('--weight-decay', default=1e-6, type=float, metavar='W',
                     help='weight decay')
-parser.add_argument('--lambd', default=3.9e-3, type=float, metavar='L',
+parser.add_argument('--lambd', default=0.0051, type=float, metavar='L',
                     help='weight on off-diagonal terms')
 parser.add_argument('--projector', default='8192-8192-8192', type=str,
                     metavar='MLP', help='projector MLP')
-parser.add_argument('--scale-loss', default=1 / 32, type=float,
-                    metavar='S', help='scale the loss')
 parser.add_argument('--print-freq', default=100, type=int, metavar='N',
                     help='print frequency')
 parser.add_argument('--checkpoint-dir', default='./checkpoint/', type=Path,
@@ -87,8 +87,16 @@ def main_worker(gpu, args):
 
     model = BarlowTwins(args).cuda(gpu)
     model = nn.SyncBatchNorm.convert_sync_batchnorm(model)
+    param_weights = []
+    param_biases = []
+    for param in model.parameters():
+        if param.ndim == 1:
+            param_biases.append(param)
+        else:
+            param_weights.append(param)
+    parameters = [{'params': param_weights}, {'params': param_biases}]
     model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[gpu])
-    optimizer = LARS(model.parameters(), lr=0, weight_decay=args.weight_decay,
+    optimizer = LARS(parameters, lr=0, weight_decay=args.weight_decay,
                      weight_decay_filter=exclude_bias_and_norm,
                      lars_adaptation_filter=exclude_bias_and_norm)
 
@@ -117,7 +125,7 @@ def main_worker(gpu, args):
         for step, ((y1, y2), _) in enumerate(loader, start=epoch * len(loader)):
             y1 = y1.cuda(gpu, non_blocking=True)
             y2 = y2.cuda(gpu, non_blocking=True)
-            lr = adjust_learning_rate(args, optimizer, loader, step)
+            adjust_learning_rate(args, optimizer, loader, step)
             optimizer.zero_grad()
             with torch.cuda.amp.autocast():
                 loss = model.forward(y1, y2)
@@ -126,7 +134,9 @@ def main_worker(gpu, args):
             scaler.update()
             if step % args.print_freq == 0:
                 if args.rank == 0:
-                    stats = dict(epoch=epoch, step=step, learning_rate=lr,
+                    stats = dict(epoch=epoch, step=step,
+                                 lr_weights=optimizer.param_groups[0]['lr'],
+                                 lr_biases=optimizer.param_groups[1]['lr'],
                                  loss=loss.item(),
                                  time=int(time.time() - start_time))
                     print(json.dumps(stats))
@@ -145,7 +155,7 @@ def main_worker(gpu, args):
 def adjust_learning_rate(args, optimizer, loader, step):
     max_steps = args.epochs * len(loader)
     warmup_steps = 10 * len(loader)
-    base_lr = args.learning_rate * args.batch_size / 256
+    base_lr = args.batch_size / 256
     if step < warmup_steps:
         lr = base_lr * step / warmup_steps
     else:
@@ -154,9 +164,8 @@ def adjust_learning_rate(args, optimizer, loader, step):
         q = 0.5 * (1 + math.cos(math.pi * step / max_steps))
         end_lr = base_lr * 0.001
         lr = base_lr * q + end_lr * (1 - q)
-    for param_group in optimizer.param_groups:
-        param_group['lr'] = lr
-    return lr
+    optimizer.param_groups[0]['lr'] = lr * args.learning_rate_weights
+    optimizer.param_groups[1]['lr'] = lr * args.learning_rate_biases
 
 
 def handle_sigusr1(signum, frame):
@@ -206,10 +215,8 @@ class BarlowTwins(nn.Module):
         c.div_(self.args.batch_size)
         torch.distributed.all_reduce(c)
 
-        # use --scale-loss to multiply the loss by a constant factor
-        # see the Issues section of the readme
-        on_diag = torch.diagonal(c).add_(-1).pow_(2).sum().mul(self.args.scale_loss)
-        off_diag = off_diagonal(c).pow_(2).sum().mul(self.args.scale_loss)
+        on_diag = torch.diagonal(c).add_(-1).pow_(2).sum()
+        off_diag = off_diagonal(c).pow_(2).sum()
         loss = on_diag + self.args.lambd * off_diag
         return loss
 
