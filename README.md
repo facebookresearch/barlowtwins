@@ -90,4 +90,4 @@ https://github.com/yaohungt/Barlow-Twins-HSIC
 
 ### License
 
-This project is under the CC-BY-NC 4.0 license. See [LICENSE](LICENSE) for details.
+This project is released under MIT License. See [LICENSE](LICENSE) for details.
