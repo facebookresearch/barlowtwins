@@ -97,8 +97,8 @@ def main_worker(gpu, args):
     parameters = [{'params': param_weights}, {'params': param_biases}]
     model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[gpu])
     optimizer = LARS(parameters, lr=0, weight_decay=args.weight_decay,
-                     weight_decay_filter=exclude_bias_and_norm,
-                     lars_adaptation_filter=exclude_bias_and_norm)
+                     weight_decay_filter=True,
+                     lars_adaptation_filter=True)
 
     # automatically resume from checkpoint if it exists
     if (args.checkpoint_dir / 'checkpoint.pth').is_file():
@@ -223,11 +223,15 @@ class BarlowTwins(nn.Module):
 
 class LARS(optim.Optimizer):
     def __init__(self, params, lr, weight_decay=0, momentum=0.9, eta=0.001,
-                 weight_decay_filter=None, lars_adaptation_filter=None):
+                 weight_decay_filter=False, lars_adaptation_filter=False):
         defaults = dict(lr=lr, weight_decay=weight_decay, momentum=momentum,
                         eta=eta, weight_decay_filter=weight_decay_filter,
                         lars_adaptation_filter=lars_adaptation_filter)
         super().__init__(params, defaults)
+
+
+    def exclude_bias_and_norm(self, p):
+        return p.ndim == 1
 
     @torch.no_grad()
     def step(self):
@@ -238,10 +242,11 @@ class LARS(optim.Optimizer):
                 if dp is None:
                     continue
 
-                if g['weight_decay_filter'] is None or not g['weight_decay_filter'](p):
+                if not g['weight_decay_filter'] or not self.exclude_bias_and_norm(p):
+                    print(p.shape)
                     dp = dp.add(p, alpha=g['weight_decay'])
 
-                if g['lars_adaptation_filter'] is None or not g['lars_adaptation_filter'](p):
+                if not g['lars_adaptation_filter'] or not self.exclude_bias_and_norm(p):
                     param_norm = torch.norm(p)
                     update_norm = torch.norm(dp)
                     one = torch.ones_like(param_norm)
@@ -258,9 +263,6 @@ class LARS(optim.Optimizer):
 
                 p.add_(mu, alpha=-g['lr'])
 
-
-def exclude_bias_and_norm(p):
-    return p.ndim == 1
 
 
 class GaussianBlur(object):
