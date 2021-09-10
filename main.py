@@ -243,7 +243,6 @@ class LARS(optim.Optimizer):
                     continue
 
                 if not g['weight_decay_filter'] or not self.exclude_bias_and_norm(p):
-                    print(p.shape)
                     dp = dp.add(p, alpha=g['weight_decay'])
 
                 if not g['lars_adaptation_filter'] or not self.exclude_bias_and_norm(p):
