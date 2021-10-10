@@ -5,88 +5,121 @@
 # LICENSE file in the root directory of this source tree.
 
 from pathlib import Path
-import argparse
+# import argparse
 import json
 import math
 import os
 import random
-import signal
-import subprocess
-import sys
+# import signal
+# import subprocess
+# import sys
 import time
 
-from PIL import Image, ImageOps, ImageFilter
+# from PIL import Image, ImageOps, ImageFilter
 from torch import nn, optim
 import torch
 import torchvision
-import torchvision.transforms as transforms
+# import torchvision.transforms as transforms
 
-parser = argparse.ArgumentParser(description='Barlow Twins Training')
-parser.add_argument('data', type=Path, metavar='DIR',
-                    help='path to dataset')
-parser.add_argument('--workers', default=8, type=int, metavar='N',
-                    help='number of data loader workers')
-parser.add_argument('--epochs', default=1000, type=int, metavar='N',
-                    help='number of total epochs to run')
-parser.add_argument('--batch-size', default=2048, type=int, metavar='N',
-                    help='mini-batch size')
-parser.add_argument('--learning-rate-weights', default=0.2, type=float, metavar='LR',
-                    help='base learning rate for weights')
-parser.add_argument('--learning-rate-biases', default=0.0048, type=float, metavar='LR',
-                    help='base learning rate for biases and batch norm parameters')
-parser.add_argument('--weight-decay', default=1e-6, type=float, metavar='W',
-                    help='weight decay')
-parser.add_argument('--lambd', default=0.0051, type=float, metavar='L',
-                    help='weight on off-diagonal terms')
-parser.add_argument('--projector', default='8192-8192-8192', type=str,
-                    metavar='MLP', help='projector MLP')
-parser.add_argument('--print-freq', default=100, type=int, metavar='N',
-                    help='print frequency')
-parser.add_argument('--checkpoint-dir', default='./checkpoint/', type=Path,
-                    metavar='DIR', help='path to checkpoint directory')
+from barlowtwins.audioTransformer import AudioTransformer
+from barlowtwins.audioDataset import AudioDataset
 
+from common.utils.pathUtils import createFullPathTree, ensureDir, savePickle, loadPickle
+from common.utils.logger import CreateLogger
 
-def main():
-    args = parser.parse_args()
-    args.ngpus_per_node = torch.cuda.device_count()
-    if 'SLURM_JOB_ID' in os.environ:
-        # single-node and multi-node distributed training on SLURM cluster
-        # requeue job on SLURM preemption
-        signal.signal(signal.SIGUSR1, handle_sigusr1)
-        signal.signal(signal.SIGTERM, handle_sigterm)
-        # find a common host name on all nodes
-        # assume scontrol returns hosts in the same order on all nodes
-        cmd = 'scontrol show hostnames ' + os.getenv('SLURM_JOB_NODELIST')
-        stdout = subprocess.check_output(cmd.split())
-        host_name = stdout.decode().splitlines()[0]
-        args.rank = int(os.getenv('SLURM_NODEID')) * args.ngpus_per_node
-        args.world_size = int(os.getenv('SLURM_NNODES')) * args.ngpus_per_node
-        args.dist_url = f'tcp://{host_name}:58472'
-    else:
-        # single-node distributed training
-        args.rank = 0
-        args.dist_url = 'tcp://localhost:58472'
-        args.world_size = args.ngpus_per_node
-    torch.multiprocessing.spawn(main_worker, (args,), args.ngpus_per_node)
+# parser = argparse.ArgumentParser(description='Barlow Twins Training')
+# parser.add_argument('data', type=Path, metavar='DIR',
+#                     help='path to dataset')
+# parser.add_argument('--workers', default=8, type=int, metavar='N',
+#                     help='number of data loader workers')
+# parser.add_argument('--epochs', default=1000, type=int, metavar='N',
+#                     help='number of total epochs to run')
+# parser.add_argument('--batch-size', default=2048, type=int, metavar='N',
+#                     help='mini-batch size')
+# parser.add_argument('--learning-rate-weights', default=0.2, type=float, metavar='LR',
+#                     help='base learning rate for weights')
+# parser.add_argument('--learning-rate-biases', default=0.0048, type=float, metavar='LR',
+#                     help='base learning rate for biases and batch norm parameters')
+# parser.add_argument('--weight-decay', default=1e-6, type=float, metavar='W',
+#                     help='weight decay')
+# parser.add_argument('--lambd', default=0.0051, type=float, metavar='L',
+#                     help='weight on off-diagonal terms')
+# parser.add_argument('--projector', default='8192-8192-8192', type=str,
+#                     metavar='MLP', help='projector MLP')
+# parser.add_argument('--print-freq', default=100, type=int, metavar='N',
+#                     help='print frequency')
+# parser.add_argument('--checkpoint-dir', default='./checkpoint/', type=Path,
+#                     metavar='DIR', help='path to checkpoint directory')
 
 
-def main_worker(gpu, args):
-    args.rank += gpu
-    torch.distributed.init_process_group(
-        backend='nccl', init_method=args.dist_url,
-        world_size=args.world_size, rank=args.rank)
+# def main():
+#     args = parser.parse_args()
+#     args.ngpus_per_node = torch.cuda.device_count()
+#     if 'SLURM_JOB_ID' in os.environ:
+#         # single-node and multi-node distributed training on SLURM cluster
+#         # requeue job on SLURM preemption
+#         signal.signal(signal.SIGUSR1, handle_sigusr1)
+#         signal.signal(signal.SIGTERM, handle_sigterm)
+#         # find a common host name on all nodes
+#         # assume scontrol returns hosts in the same order on all nodes
+#         cmd = 'scontrol show hostnames ' + os.getenv('SLURM_JOB_NODELIST')
+#         stdout = subprocess.check_output(cmd.split())
+#         host_name = stdout.decode().splitlines()[0]
+#         args.rank = int(os.getenv('SLURM_NODEID')) * args.ngpus_per_node
+#         args.world_size = int(os.getenv('SLURM_NNODES')) * args.ngpus_per_node
+#         args.dist_url = f'tcp://{host_name}:58472'
+#     else:
+#         # single-node distributed training
+#         args.rank = 0
+#         args.dist_url = 'tcp://localhost:58472'
+#         args.world_size = args.ngpus_per_node
+#     torch.multiprocessing.spawn(main_worker, (args,), args.ngpus_per_node)
 
+class Trainer(object):
+    def __init__(self, args):
+        self.args = args
+        self.logger = None
+
+    def run(self, gpu):
+        with CreateLogger(self.args, logger_type=self.args.logger_type) as logger:
+            self.logger = logger
+            # self.reportInfo(cfg)
+            # self.loggerWorkaroundAll()
+            self.args.checkpoint_dir = Path(self.args.output_dir)
+
+            main_worker(self.args, logger, gpu)
+
+
+# def plotStats(args, logger, stats, ite, typ):
+#     if du.is_master_proc() and stats is not None:
+#         for k, v in stats.items():
+#             try:
+#                 val = float(v)
+#                 nme = "{}_{}".format(typ, k)
+#                 maxx = self.cfg.METRICS.PLOT_MAX_LIMITS.get(k, None)
+#                 val = min(val, maxx) if maxx is not None else val
+#                 minn = self.cfg.METRICS.PLOT_MIN_LIMITS.get(k, None)
+#                 val = max(val, minn) if minn is not None else val
+#                 self.logger.log_row(name=nme, iter=ite, val=val, description="{} master proc".format(nme))
+#             except ValueError:
+#                 pass
+
+
+
+def main_worker(args, logger, gpu):
+    logger.info("Starting on Device {}".format(gpu))
     if args.rank == 0:
         args.checkpoint_dir.mkdir(parents=True, exist_ok=True)
         stats_file = open(args.checkpoint_dir / 'stats.txt', 'a', buffering=1)
-        print(' '.join(sys.argv))
-        print(' '.join(sys.argv), file=stats_file)
 
-    torch.cuda.set_device(gpu)
     torch.backends.cudnn.benchmark = True
 
-    model = BarlowTwins(args).cuda(gpu)
-    model = nn.SyncBatchNorm.convert_sync_batchnorm(model)
+    if torch.cuda.is_available():
+        model = BarlowTwins(args).cuda(args.rank)
+        model = nn.SyncBatchNorm.convert_sync_batchnorm(model)
+    else:
+        model =  BarlowTwins(args)
+
     param_weights = []
     param_biases = []
     for param in model.parameters():
@@ -95,23 +128,27 @@ def main_worker(gpu, args):
         else:
             param_weights.append(param)
     parameters = [{'params': param_weights}, {'params': param_biases}]
-    model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[gpu])
+    if torch.cuda.is_available():
+        model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[gpu])
     optimizer = LARS(parameters, lr=0, weight_decay=args.weight_decay,
-                     weight_decay_filter=True,
-                     lars_adaptation_filter=True)
+                    weight_decay_filter=True,
+                    lars_adaptation_filter=True)
 
     # automatically resume from checkpoint if it exists
     if (args.checkpoint_dir / 'checkpoint.pth').is_file():
         ckpt = torch.load(args.checkpoint_dir / 'checkpoint.pth',
-                          map_location='cpu')
+                        map_location='cpu')
         start_epoch = ckpt['epoch']
         model.load_state_dict(ckpt['model'])
         optimizer.load_state_dict(ckpt['optimizer'])
     else:
         start_epoch = 0
 
-    dataset = torchvision.datasets.ImageFolder(args.data / 'train', Transform())
-    sampler = torch.utils.data.distributed.DistributedSampler(dataset)
+    # dataset = torchvision.datasets.ImageFolder(args.data / 'train', Transform())
+    dataset = AudioDataset(args=args, logger=logger, mode='train', transform=AudioTransformer(args, logger))
+    
+    sampler = torch.utils.data.distributed.DistributedSampler(dataset) if torch.cuda.is_available() \
+        else torch.utils.data.RandomSampler(dataset)
     assert args.batch_size % args.world_size == 0
     per_device_batch_size = args.batch_size // args.world_size
     loader = torch.utils.data.DataLoader(
@@ -121,10 +158,12 @@ def main_worker(gpu, args):
     start_time = time.time()
     scaler = torch.cuda.amp.GradScaler()
     for epoch in range(start_epoch, args.epochs):
-        sampler.set_epoch(epoch)
-        for step, ((y1, y2), _) in enumerate(loader, start=epoch * len(loader)):
-            y1 = y1.cuda(gpu, non_blocking=True)
-            y2 = y2.cuda(gpu, non_blocking=True)
+        if torch.cuda.is_available():
+            sampler.set_epoch(epoch)
+        for step, ((y1, y2), _, _) in enumerate(loader, start=epoch * len(loader)):
+            if torch.cuda.is_available():
+                y1 = y1.cuda(gpu, non_blocking=True)
+                y2 = y2.cuda(gpu, non_blocking=True)
             adjust_learning_rate(args, optimizer, loader, step)
             optimizer.zero_grad()
             with torch.cuda.amp.autocast():
@@ -135,21 +174,21 @@ def main_worker(gpu, args):
             if step % args.print_freq == 0:
                 if args.rank == 0:
                     stats = dict(epoch=epoch, step=step,
-                                 lr_weights=optimizer.param_groups[0]['lr'],
-                                 lr_biases=optimizer.param_groups[1]['lr'],
-                                 loss=loss.item(),
-                                 time=int(time.time() - start_time))
+                                lr_weights=optimizer.param_groups[0]['lr'],
+                                lr_biases=optimizer.param_groups[1]['lr'],
+                                loss=loss.item(),
+                                time=int(time.time() - start_time))
                     print(json.dumps(stats))
                     print(json.dumps(stats), file=stats_file)
         if args.rank == 0:
             # save checkpoint
             state = dict(epoch=epoch + 1, model=model.state_dict(),
-                         optimizer=optimizer.state_dict())
+                        optimizer=optimizer.state_dict())
             torch.save(state, args.checkpoint_dir / 'checkpoint.pth')
     if args.rank == 0:
         # save final model
         torch.save(model.module.backbone.state_dict(),
-                   args.checkpoint_dir / 'resnet50.pth')
+                args.checkpoint_dir / 'resnet50.pth')
 
 
 def adjust_learning_rate(args, optimizer, loader, step):
@@ -189,6 +228,11 @@ class BarlowTwins(nn.Module):
         super().__init__()
         self.args = args
         self.backbone = torchvision.models.resnet50(zero_init_residual=True)
+        
+        # Update the native resNet for audio (single input channel)
+        # Create an Audio input for resNet
+        self.backbone.conv1 = nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3, bias=False)
+        nn.init.kaiming_normal_(self.backbone.conv1.weight, mode='fan_out', nonlinearity='relu')
         self.backbone.fc = nn.Identity()
 
         # projector
@@ -213,7 +257,8 @@ class BarlowTwins(nn.Module):
 
         # sum the cross-correlation matrix between all gpus
         c.div_(self.args.batch_size)
-        torch.distributed.all_reduce(c)
+        if torch.cuda.is_available():
+            torch.distributed.all_reduce(c)
 
         on_diag = torch.diagonal(c).add_(-1).pow_(2).sum()
         off_diag = off_diagonal(c).pow_(2).sum()
@@ -326,5 +371,5 @@ class Transform:
         return y1, y2
 
 
-if __name__ == '__main__':
-    main()
+# if __name__ == '__main__':
+#     main()

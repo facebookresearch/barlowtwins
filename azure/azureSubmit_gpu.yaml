@@ -1,0 +1,6 @@
+_include: !include azureSubmit_cpu.yaml
+
+aml_compute_target: PrimaryTrain
+docker_image: mcr.microsoft.com/azureml/openmpi3.1.2-cuda10.1-cudnn7-ubuntu18.04
+conda_environment: vqm_environment_gpu.yaml
+workspace_config: azureConfigTrain.json

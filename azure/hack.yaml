@@ -1,0 +1,4 @@
+_include: !include hackBase.yaml
+
+epochs: 2
+data_train_view_files: ['hack/trainConfigs/short_40.txt']   # relative path to the train view file lists
