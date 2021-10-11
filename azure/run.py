@@ -12,7 +12,7 @@ from barlowtwins.launch import launch_job
 from barlowtwins.main import Trainer
 from common.utils.yamlConfig import YamlConfig
 from common.utils.logger import CreateLogger
-
+from common.utils.pathUtils import ensureDir
 
 '''
 entry point for hackerthon project using barlowTwin unsupervided learning
@@ -44,6 +44,7 @@ def main():
       args = config.ApplyConfigFile(args)
 
       with CreateLogger(args, logger_type=args.logger_type) as logger:
+        ensureDir(args.output_dir)
         logger.info(config.ReportConfig())
         logger.log_value('title', args.log_title, 'Run Title entered when job started')
         host_name = socket.gethostname() 
@@ -53,7 +54,7 @@ def main():
         logger.info("Starting on host {} host_ip {}".format(host_name, host_ip))
         logger.info("torch version {}".format(torch.__version__))
         logger.info("Torchvision version {}".format(torchvision.__version__))
-        logger.info("TorchAudioo version {}".format(torchaudio.__version__))
+        logger.info("TorchAudio version {}".format(torchaudio.__version__))
         logger.info("Cuda enabled {} num GPU {}".format(torch.cuda.is_available(), torch.cuda.device_count()))
         logger.info("Ignoring warnings")
         warnings.simplefilter("ignore")
