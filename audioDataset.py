@@ -64,22 +64,24 @@ class AudioDataset(torch.utils.data.Dataset):
         self.logger.info("Loading {} files from {} Total {}".format(len(files), viewFile, len(self.clipList)))
 
     def loadClip(self, index):
-      clip = None
-      label = None
-      if index >= len(self.clipList):
-        self.logger.debug("AudioLoader index is out of range Expect in range 0 - {}".format(len(self.clipList)))
+        clip = None
+        label = None
+        if index >= len(self.clipList):
+            self.logger.debug("AudioLoader index is out of range Expect in range 0 - {}".format(len(self.clipList)))
+            return clip, label
+      
+        fPath, label = self.clipList[index]
+        if os.path.exists(fPath):
+            clip, sr = lb.load(fPath, sr=self.args.data_samp_rate)
+            clip = torch.tensor(clip)
+            if sr != self.args.data_samp_rate:
+                self.logger.debug("Got samp rate {} Expect {} while loading  {}".format(sr, self.args.data_samp_rate, fPath))
+                clip = None
+                label = None
+        else:
+            self.logger.debug("Did not find file {}".format(fPath))
+      
         return clip, label
-      
-      fPath, label = self.clipList[index]
-      if os.path.exists(fPath):
-        clip, sr = lb.load(fPath, sr=self.args.data_samp_rate)
-        clip = torch.tensor(clip)
-        if sr != self.args.data_samp_rate:
-          self.logger.debug("Got samp rate {} Expect {} while loading  {}".format(sr, self.args.data_samp_rate, fPath))
-          clip = None
-          label = None
-      
-      return clip, label
         
     def __getitem__(self, index):
         """
@@ -106,7 +108,7 @@ class AudioDataset(torch.utils.data.Dataset):
         else:
             raise RuntimeError(
                 "Failed to fetch clip after {} retries.".format(
-                    self.self.args.data_num_retry
+                    self.args.data_num_retry
                 )
             )
 

@@ -40,9 +40,9 @@ class AudioTransformer(object):
     return nn.Sequential(*transforms)
 
   
-    def __call__(self, x):
-        y1 = self.transform_1(x)
-        y2 = self.transform_2(x)
-        return y1, y2
+  def __call__(self, x):
+      y1 = self.transform_1(x)
+      y2 = self.transform_2(x)
+      return y1, y2
 
 

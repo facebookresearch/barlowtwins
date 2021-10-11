@@ -27,6 +27,13 @@ from barlowtwins.audioDataset import AudioDataset
 from common.utils.pathUtils import createFullPathTree, ensureDir, savePickle, loadPickle
 from common.utils.logger import CreateLogger
 
+import logging
+import azureml.core.authentication as authLog
+import msrest.http_logger as http_logger
+from msrest.universal_http.__init__ import _LOGGER as universalHttpLogger
+from msrest.service_client import _LOGGER as serviceLogger
+from urllib3.connectionpool import log as urllib3Logger
+
 # parser = argparse.ArgumentParser(description='Barlow Twins Training')
 # parser.add_argument('data', type=Path, metavar='DIR',
 #                     help='path to dataset')
@@ -80,6 +87,20 @@ class Trainer(object):
         self.args = args
         self.logger = None
 
+    def loggerWorkaroundAll(self):
+
+        # Workarounds for issue in S/C cluster that gets a wierd loglevel
+        self.loggerWorkaround(authLog.module_logger, 'AzureAuthority')
+        self.loggerWorkaround(http_logger._LOGGER, "http logger")
+        self.loggerWorkaround(logging.getLogger("azureml"), "azureml logger")
+        universalHttpLogger.debug("universalHttpLogger Debug Configuring requets Before")
+        universalHttpLogger.info("universalHttpLogger INFO Configuring requets Before")
+        self.loggerWorkaround(universalHttpLogger, "universal logger")
+        universalHttpLogger.debug("universalHttpLogger DEBUG Configuring requets Before")
+        self.loggerWorkaround(serviceLogger, "serviceLogger")
+        self.loggerWorkaround(urllib3Logger, "urllib3 logger")
+
+
     def run(self, gpu):
         with CreateLogger(self.args, logger_type=self.args.logger_type) as logger:
             self.logger = logger
@@ -90,27 +111,24 @@ class Trainer(object):
             main_worker(self.args, logger, gpu)
 
 
-# def plotStats(args, logger, stats, ite, typ):
-#     if du.is_master_proc() and stats is not None:
-#         for k, v in stats.items():
-#             try:
-#                 val = float(v)
-#                 nme = "{}_{}".format(typ, k)
-#                 maxx = self.cfg.METRICS.PLOT_MAX_LIMITS.get(k, None)
-#                 val = min(val, maxx) if maxx is not None else val
-#                 minn = self.cfg.METRICS.PLOT_MIN_LIMITS.get(k, None)
-#                 val = max(val, minn) if minn is not None else val
-#                 self.logger.log_row(name=nme, iter=ite, val=val, description="{} master proc".format(nme))
-#             except ValueError:
-#                 pass
+def plotStats(args, logger, stats, ite, typ):
+    if args.rank == 0 and stats is not None:
+        for k, v in stats.items():
+            try:
+                val = float(v)
+                nme = "{}_{}".format(typ, k)
+                maxx = args.data_plot_max_limits.get(k, None)
+                val = min(val, maxx) if maxx is not None else val
+                minn = args.data_plot_min_limits.get(k, None)
+                val = max(val, minn) if minn is not None else val
+                logger.log_row(name=nme, iter=ite, val=val, description="{} master proc".format(nme))
+            except ValueError:
+                pass
 
 
 
 def main_worker(args, logger, gpu):
     logger.info("Starting on Device {}".format(gpu))
-    if args.rank == 0:
-        args.checkpoint_dir.mkdir(parents=True, exist_ok=True)
-        stats_file = open(args.checkpoint_dir / 'stats.txt', 'a', buffering=1)
 
     torch.backends.cudnn.benchmark = True
 
@@ -171,6 +189,16 @@ def main_worker(args, logger, gpu):
             scaler.scale(loss).backward()
             scaler.step(optimizer)
             scaler.update()
+            if step %args.plot_freq == 0:
+                if args.rank == 0:
+                    stats = dict(
+                                lr_weights=optimizer.param_groups[0]['lr'],
+                                lr_biases=optimizer.param_groups[1]['lr'],
+                                loss=loss.item(),
+                                )
+                    ite = step + epoch * len(dataset)
+                    plotStats(args, logger, stats, ite, 'TrainIter')
+
             if step % args.print_freq == 0:
                 if args.rank == 0:
                     stats = dict(epoch=epoch, step=step,
@@ -178,16 +206,17 @@ def main_worker(args, logger, gpu):
                                 lr_biases=optimizer.param_groups[1]['lr'],
                                 loss=loss.item(),
                                 time=int(time.time() - start_time))
-                    print(json.dumps(stats))
-                    print(json.dumps(stats), file=stats_file)
-        if args.rank == 0:
+                    logger.info(json.dumps(stats))
+        if args.rank == 0 and (epoch % args.data_epoch_checkpoint_freq) == 0:
             # save checkpoint
-            state = dict(epoch=epoch + 1, model=model.state_dict(),
+            statedict = model.module.state_dict() if torch.cuda.is_available() else model.state_dict()
+            state = dict(epoch=epoch + 1, model=statedict,
                         optimizer=optimizer.state_dict())
             torch.save(state, args.checkpoint_dir / 'checkpoint.pth')
     if args.rank == 0:
         # save final model
-        torch.save(model.module.backbone.state_dict(),
+        statedict = model.module.backbone.state_dict() if torch.cuda.is_available() else model.backbone.state_dict()
+        torch.save(statedict,
                 args.checkpoint_dir / 'resnet50.pth')
 
 
