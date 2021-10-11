@@ -1,0 +1,25 @@
+name: hack
+dependencies:
+- python=3.8
+
+- pip:
+  - azure-cosmosdb-table
+  - azureml-defaults
+  - numpy
+  - PyYAML
+  - matplotlib
+  - pyyaml-include
+  - azureml-sdk
+  - librosa
+  - soundfile
+  - torchvision
+  - torchaudio  
+  - https://pstntrain2380840354.blob.core.windows.net/azureml/Environment/azureml-private-packages/barlow-1633918696.864326-py3-none-any.whl
+  - https://pstntrain2380840354.blob.core.windows.net/azureml/Environment/azureml-private-packages/ic3_ai-0.13-py3-none-any.whl
+- pytorch
+- cpuonly
+- libvorbis=1.3.5
+- libsndfile
+channels:
+- conda-forge
+- pytorch

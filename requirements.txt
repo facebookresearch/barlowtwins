@@ -1,0 +1,12 @@
+azureml-defaults
+numpy
+pathlib2
+PyYAML
+matplotlib
+pyyaml-include
+azureml-sdk
+librosa
+soundfile
+torchvision
+torchaudio
+torch

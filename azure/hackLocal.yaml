@@ -1,0 +1,15 @@
+_include: !include hack.yaml
+
+log_file: ''
+debug: True
+log_upload_files: False
+logger_type: passthrough
+config_file_delete_on_exit: False
+root_dir: c:/projects/hack_2021
+output_dir: c:/projects/hack_2021/out
+input_file_storage: ''
+log_title: ''
+
+data_train_view_files: ['hack/trainConfigs/tmp.txt', ]   # relative path to the train view file lists
+data_epoch_checkpoint_freq: 1
+epochs: 2
