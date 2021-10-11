@@ -1,14 +1,12 @@
-azuremldefaults
+azureml-defaults
 numpy
 pathlib2
 PyYAML
 matplotlib
-pyyamlinclude
-azuremlsdk
+pyyaml-include
+azureml-sdk
 librosa
 soundfile
 torchvision
 torchaudio
 torch
-torchvision
-torchaudio

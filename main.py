@@ -87,6 +87,16 @@ class Trainer(object):
         self.args = args
         self.logger = None
 
+    def loggerWorkaround(self, azureLogger, name):
+        '''
+        Workaround around for azure loggers that by default spew debug logging that flood the output
+        Simply set logging level to WARN
+        '''
+        before = azureLogger.getEffectiveLevel()
+        azureLogger.setLevel(logging.WARNING)
+        self.logger.info("{} logger workaround Loglevel Before {} After {}".format(
+            name, before, azureLogger.getEffectiveLevel()))
+    
     def loggerWorkaroundAll(self):
 
         # Workarounds for issue in S/C cluster that gets a wierd loglevel
@@ -104,8 +114,7 @@ class Trainer(object):
     def run(self, gpu):
         with CreateLogger(self.args, logger_type=self.args.logger_type) as logger:
             self.logger = logger
-            # self.reportInfo(cfg)
-            # self.loggerWorkaroundAll()
+            self.loggerWorkaroundAll()
             self.args.checkpoint_dir = Path(self.args.output_dir)
 
             main_worker(self.args, logger, gpu)
