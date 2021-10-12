@@ -1,7 +1,17 @@
 _include: !include hackBase.yaml
 
-epochs: 10
-data_train_view_files: ['hack/trainConfigs/short_40.txt']   # relative path to the train view file lists
-epochs: 10
-print_freq: 1
-plot_freq: 1
+epochs: 20
+batch_size: 64
+data_train_view_files: ['hack/trainConfigs/short_10000.txt']   # relative path to the train view file lists
+print_freq: 50
+plot_freq: 4
+
+
+backbone_model: Cnn14
+
+# To use a torchvision Net
+# backbone_model: resnet50
+# backbone_kwargs: [{ "zero_init_residual": True}]
+
+data_plot_min_limits: {'loss': 0.0}
+data_plot_max_limits: {'loss': 12000.0}

@@ -10,3 +10,4 @@ soundfile
 torchvision
 torchaudio
 torch
+torchlibrosa

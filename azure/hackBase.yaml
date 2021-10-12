@@ -17,6 +17,9 @@ plot_freq: 100
 checkpoint_dir: checkpoint
 backend: nccl
 master_port: '9756'
+backbone_model: Cnn6
+backbone_kwargs: [{'sample_rate': 16000, 'window_size': 1024, 'hop_size': 800, 'mel_bins': 64, 'fmin': 0, 'fmax': 8000, 'classes_num': 2 }]
+
 
 # Data
 data_train_bin_path: ['hack/music-detection-data/sl_training_set_v1/']  # relative path to the binary data files
@@ -30,11 +33,11 @@ data_epoch_checkpoint_freq: 5
 # Transforms must be one of torchAudio transforms - see https://pytorch.org/audio/stable/transforms.html
 # Each entry is a tuple [TransformName, arguments]
 data_transforms_1: [ 
-    ['MelSpectrogram' , {'n_fft': 1024, 'hop_length': 800}],
+    ['MelSpectrogram' , {'n_fft': 1024, 'hop_length': 800, 'n_mels': 64}],
     ['ExpandDim', {'dim': 0}] 
   ]
 data_transforms_2: [ 
-    ['MelSpectrogram' , {'n_fft': 1024, 'hop_length': 800}],
+    ['MelSpectrogram' , {'n_fft': 1024, 'hop_length': 800, 'n_mels': 64}],
     ['ExpandDim', {'dim': 0}] 
   ]
 
