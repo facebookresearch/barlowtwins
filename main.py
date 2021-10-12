@@ -18,7 +18,9 @@ import time
 # from PIL import Image, ImageOps, ImageFilter
 from torch import nn, optim
 import torch
-import torchvision
+import torchvision.models as torchvisionModels
+import audioset_tagging_cnn.pytorch.models as audiosetModels
+
 # import torchvision.transforms as transforms
 
 from barlowtwins.audioTransformer import AudioTransformer
@@ -134,7 +136,30 @@ def plotStats(args, logger, stats, ite, typ):
             except ValueError:
                 pass
 
+def chooseBackbone(backbone_model, backbone_kwargs, logger):
+    '''
+    return a pre-configured pytorch model
+    '''
+    model = None
 
+    if hasattr(audiosetModels, backbone_model):
+        model = getattr(audiosetModels, backbone_model)(**backbone_kwargs)
+        # audio models have uniform upper layers - fiddel these for the barlow environment
+        lastLayersize = model.fc1.out_features
+        logger.info("Found {} in audiosetModels".format(backbone_model))
+
+    # Check if it is a torchvision model - they require some fiddling
+    if model is None and  hasattr(torchvisionModels, backbone_model):
+        model = getattr(torchvisionModels, backbone_model)(**backbone_kwargs)
+        # Vision model have uniform structure just need to fiddle it for audio
+        model.conv1 = nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3, bias=False)
+        nn.init.kaiming_normal_(model.conv1.weight, mode='fan_out', nonlinearity='relu')
+        lastLayersize = model.fc.in_features
+        model.fc = nn.Identity()
+        logger.info("Found {} in torchvisionModels".format(backbone_model))
+        
+    assert model is not None, "Cannot find an implementation for backbone model {}".format(backbone_model)
+    return model, lastLayersize
 
 def main_worker(args, logger, gpu):
     logger.info("Starting on Device {}".format(gpu))
@@ -142,10 +167,10 @@ def main_worker(args, logger, gpu):
     torch.backends.cudnn.benchmark = True
 
     if torch.cuda.is_available():
-        model = BarlowTwins(args).cuda(args.rank)
+        model = BarlowTwins(args, logger).cuda(args.rank)
         model = nn.SyncBatchNorm.convert_sync_batchnorm(model)
     else:
-        model =  BarlowTwins(args)
+        model =  BarlowTwins(args, logger)
 
     param_weights = []
     param_biases = []
@@ -262,19 +287,23 @@ def off_diagonal(x):
 
 
 class BarlowTwins(nn.Module):
-    def __init__(self, args):
+    def __init__(self, args, logger):
         super().__init__()
         self.args = args
-        self.backbone = torchvision.models.resnet50(zero_init_residual=True)
+        self.logger = logger
+        backbone, lastLayerSize = chooseBackbone(self.args.backbone_model, self.args.backbone_kwargs[0], self.logger)
+        self.backbone = backbone
+        self.lastLayerSize = lastLayerSize
+        # self.backbone = torchvision.models.resnet50(zero_init_residual=True)
         
         # Update the native resNet for audio (single input channel)
         # Create an Audio input for resNet
-        self.backbone.conv1 = nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3, bias=False)
-        nn.init.kaiming_normal_(self.backbone.conv1.weight, mode='fan_out', nonlinearity='relu')
-        self.backbone.fc = nn.Identity()
+        # self.backbone.conv1 = nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3, bias=False)
+        # nn.init.kaiming_normal_(self.backbone.conv1.weight, mode='fan_out', nonlinearity='relu')
+        # self.backbone.fc = nn.Identity()
 
         # projector
-        sizes = [2048] + list(map(int, args.projector.split('-')))
+        sizes = [lastLayerSize] + list(map(int, args.projector.split('-')))
         layers = []
         for i in range(len(sizes) - 2):
             layers.append(nn.Linear(sizes[i], sizes[i + 1], bias=False))
@@ -285,6 +314,9 @@ class BarlowTwins(nn.Module):
 
         # normalization layer for the representations z1 and z2
         self.bn = nn.BatchNorm1d(sizes[-1], affine=False)
+
+        self.logger.info("Created BarlowTwins using backbone {}".format(self.args.backbone_model))
+        self.logger.debug(self)
 
     def forward(self, y1, y2):
         z1 = self.projector(self.backbone(y1))

@@ -12,9 +12,10 @@ dependencies:
   - azureml-sdk
   - librosa
   - soundfile
+  - torchlibrosa
   - torchvision
   - torchaudio  
-  - https://pstntrain2380840354.blob.core.windows.net/azureml/Environment/azureml-private-packages/barlow-1633918696.864326-py3-none-any.whl
+  - https://pstntrain2380840354.blob.core.windows.net/azureml/Environment/azureml-private-packages/barlow-1634052296.239506-py3-none-any.whl
   - https://pstntrain2380840354.blob.core.windows.net/azureml/Environment/azureml-private-packages/ic3_ai-0.13-py3-none-any.whl
 - pytorch
 - cpuonly
