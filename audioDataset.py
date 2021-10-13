@@ -73,15 +73,15 @@ class AudioDataset(torch.utils.data.Dataset):
         fPath, label = self.clipList[index]
         if os.path.exists(fPath):
             clip, sr = lb.load(fPath, sr=self.args.data_samp_rate)
-            if len(clip) != int(sr*self.args.data_pad_duration):
+            if len(clip) < int(sr*self.args.data_pad_duration):
                 if len(clip) < (sr*self.args.data_pad_duration)/2:
                     self.logger.warning('audio file {} is only {:0.2f} long'.format(fPath, len(clip)/sr))
-                    x = np.zeros(sr*self.args.data_pad_duration, dtype='float32')
-                    x[:len(clip)] = clip
-                    clip = x
-                if len(clip) > (sr*self.args.data_pad_duration):
-                    self.logger.warning('audio file {} is too long: {:0.2f} seconds. only first {} seconds will be used'.format(fPath, len(clip)/sr, self.args.data_pad_duration))
-                    clip = clip[:sr*self.args.data_pad_duration]
+                x = np.zeros(sr*self.args.data_pad_duration, dtype='float32')
+                x[:len(clip)] = clip
+                clip = x
+            if len(clip) > int(sr*self.args.data_pad_duration):
+                self.logger.warning('audio file {} is too long: {:0.2f} seconds. only first {} seconds will be used'.format(fPath, len(clip)/sr, self.args.data_pad_duration))
+                clip = clip[:sr*self.args.data_pad_duration]
             clip = torch.tensor(clip)
             if sr != self.args.data_samp_rate:
                 self.logger.debug("Got samp rate {} Expect {} while loading  {}".format(sr, self.args.data_samp_rate, fPath))
