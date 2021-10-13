@@ -73,6 +73,10 @@ class AudioDataset(torch.utils.data.Dataset):
         fPath, label = self.clipList[index]
         if os.path.exists(fPath):
             clip, sr = lb.load(fPath, sr=self.args.data_samp_rate)
+            if len(clip) is not (sr*self.args.data_pad_duration):
+                x = np.zeros(sr*self.args.data_pad_duration, dtype='float32')
+                x[:len(clip)] = clip
+                clip = x
             clip = torch.tensor(clip)
             if sr != self.args.data_samp_rate:
                 self.logger.debug("Got samp rate {} Expect {} while loading  {}".format(sr, self.args.data_samp_rate, fPath))
