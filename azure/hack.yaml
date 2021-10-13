@@ -2,7 +2,8 @@ _include: !include hackBase.yaml
 
 epochs: 20
 batch_size: 64
-data_train_view_files: ['hack/trainConfigs/short_10000.txt']   # relative path to the train view file lists
+data_train_bin_path: ['hack/music-detection-data/music-detection-unlabeled/']  # relative path to the binary data files
+data_train_view_files: ['hack/trainConfigs/music_notLabeled_18579.txt']   # relative path to the train view file lists
 print_freq: 50
 plot_freq: 4
 
