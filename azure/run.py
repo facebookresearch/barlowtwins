@@ -10,6 +10,8 @@ import torchaudio
 
 from barlowtwins.launch import launch_job
 from barlowtwins.main import Trainer
+from barlowtwins.musicClassification import MusicClassifier
+
 from common.utils.yamlConfig import YamlConfig
 from common.utils.logger import CreateLogger
 from common.utils.pathUtils import ensureDir
@@ -67,8 +69,26 @@ def main():
         os.environ["WORLD_SIZE"] = str(torch.cuda.device_count())
         logger.info("MASTER_ADDR {} MASTER_PORT {} WORLD_SIZE {}".format(os.environ["MASTER_ADDR"], os.environ["MASTER_PORT"], os.environ["WORLD_SIZE"]))
         
-        trainer = Trainer(args)
-        launch_job(args=args, init_method=None, func=trainer.run)        
+        logger.tag(name='backbone_model', value=args.backbone_model)
+
+        for op in args.operations: 
+          if op =='train_unsupervised':
+            logger.tag(name='operation', value=op)
+            trainer = Trainer(args)
+            launch_job(args=args, init_method=None, func=trainer.run)
+
+          elif op =='train_supervised':
+            logger.tag(name='operation', value=op)
+            musicClassifier = MusicClassifier(args)
+            musicClassifier.train()
+
+          elif op =='eval_supervised':
+            logger.tag(name='operation', value=op)
+            musicClassifier = MusicClassifier(args)
+            musicClassifier.eval()
+
+          else:
+            raise ValueError('operation {} not found'.format(op))
 
 if __name__ == "__main__":
   main()

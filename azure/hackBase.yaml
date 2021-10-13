@@ -4,6 +4,8 @@ log_upload_files: True
 logger_type: pipeline
 config_file_delete_on_exit: True
 
+operations: [train_unsupervised] # train_unsupervised | train_supervised | eval_unsupervised
+
 workers: 8
 epochs: 1000
 batch_size: 2048
@@ -11,10 +13,12 @@ learning_rate_weights: 0.2
 learning_rate_biases: 0.0048  # base learning rate for biases and batch norm parameters
 weight_decay: 0.000001
 lambd: 0.0051   # Weight on off diagonal terms
+early_stop_patience: 10 # supervised only
 projector: '8192-8192-8192'  # Projector MLP
 print_freq: 10000
 plot_freq: 100
 checkpoint_dir: checkpoint
+checkpoint_name: checkpoint.pth
 backend: nccl
 master_port: '9756'
 backbone_model: Cnn6
@@ -24,6 +28,9 @@ backbone_kwargs: [{'sample_rate': 16000, 'window_size': 1024, 'hop_size': 800, '
 # Data
 data_train_bin_path: ['hack/music-detection-data/sl_training_set_v1/']  # relative path to the binary data files
 data_train_view_files: ['hack/trainConfigs/all.txt']   # relative path to the train view file lists
+data_val_bin_path: ['hack/music-detection-data/sl_training_set_v1/'] # supervised only
+data_val_view_files: ['hack/trainConfigs/supervised_val_v02.txt']    # supervised only
+
 data_num_retry: 10 # Maximum number of retries when  clip cannot be loaded
 data_samp_rate: 16000
 data_plot_max_limits: {}
