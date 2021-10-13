@@ -24,7 +24,6 @@ master_port: '9756'
 backbone_model: Cnn6
 backbone_kwargs: [{'sample_rate': 16000, 'window_size': 1024, 'hop_size': 800, 'mel_bins': 64, 'fmin': 0, 'fmax': 8000, 'classes_num': 2 }]
 
-
 # Data
 data_train_bin_path: ['hack/music-detection-data/sl_training_set_v1/']  # relative path to the binary data files
 data_train_view_files: ['hack/trainConfigs/all.txt']   # relative path to the train view file lists
@@ -36,6 +35,7 @@ data_samp_rate: 16000
 data_plot_max_limits: {}
 data_plot_min_limits: {}
 data_epoch_checkpoint_freq: 5
+data_pad_duration: 10 # files short than data_pad_duration seconds will be zero padded
 
 # Transforms must be one of torchAudio transforms - see https://pytorch.org/audio/stable/transforms.html
 # Each entry is a tuple [TransformName, arguments]
