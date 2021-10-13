@@ -146,6 +146,7 @@ def chooseBackbone(backbone_model, backbone_kwargs, logger):
         model = getattr(audiosetModels, backbone_model)(**backbone_kwargs)
         # audio models have uniform upper layers - fiddel these for the barlow environment
         lastLayersize = model.fc1.out_features
+        lastLayerName = 'fc1'
         logger.info("Found {} in audiosetModels".format(backbone_model))
 
     # Check if it is a torchvision model - they require some fiddling
@@ -155,11 +156,12 @@ def chooseBackbone(backbone_model, backbone_kwargs, logger):
         model.conv1 = nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3, bias=False)
         nn.init.kaiming_normal_(model.conv1.weight, mode='fan_out', nonlinearity='relu')
         lastLayersize = model.fc.in_features
+        lastLayerName = 'fc'
         model.fc = nn.Identity()
         logger.info("Found {} in torchvisionModels".format(backbone_model))
         
     assert model is not None, "Cannot find an implementation for backbone model {}".format(backbone_model)
-    return model, lastLayersize
+    return model, lastLayersize, lastLayerName
 
 def main_worker(args, logger, gpu):
     logger.info("Starting on Device {}".format(gpu))
@@ -291,9 +293,11 @@ class BarlowTwins(nn.Module):
         super().__init__()
         self.args = args
         self.logger = logger
-        backbone, lastLayerSize = chooseBackbone(self.args.backbone_model, self.args.backbone_kwargs[0], self.logger)
+        backbone, lastLayerSize, lastLayerName  = chooseBackbone(self.args.backbone_model, self.args.backbone_kwargs[0], self.logger)
         self.backbone = backbone
         self.lastLayerSize = lastLayerSize
+        self.lastLayerName = lastLayerName
+        
         # self.backbone = torchvision.models.resnet50(zero_init_residual=True)
         
         # Update the native resNet for audio (single input channel)
