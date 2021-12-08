@@ -31,10 +31,10 @@ PyTorch implementation of [Barlow Twins](https://arxiv.org/abs/2103.03230).
     <td>2048</td>
     <td>73.5%</td>
     <td>91.0%</td>
-    <td><a href="https://dl.fbaipublicfiles.com/barlowtwins/ep1000_bs2048_lrw0.2_lrb0.0048_lambd0.0051/resnet50.pth">ResNet-50</a></td>
-    <td><a href="https://dl.fbaipublicfiles.com/barlowtwins/ep1000_bs2048_lrw0.2_lrb0.0048_lambd0.0051/checkpoint.pth">full checkpoint</a></td>
-    <td><a href="https://dl.fbaipublicfiles.com/barlowtwins/ep1000_bs2048_lrw0.2_lrb0.0048_lambd0.0051/stats.txt">train logs</a></td>
-    <td><a href="https://dl.fbaipublicfiles.com/barlowtwins/ep1000_bs2048_lrw0.2_lrb0.0048_lambd0.0051/lincls_0.3/stats.txt">val logs</a></td>
+    <td><a href="https://dl.fbaipublicfiles.com/barlowtwins/ljng/resnet50.pth">ResNet-50</a></td>
+    <td><a href="https://dl.fbaipublicfiles.com/barlowtwins/ljng/checkpoint.pth">full checkpoint</a></td>
+    <td><a href="https://dl.fbaipublicfiles.com/barlowtwins/ljng/stats.txt">train logs</a></td>
+    <td><a href="https://dl.fbaipublicfiles.com/barlowtwins/ljng/cls_stats.txt">val logs</a></td>
   </tr>
 </table>
 
