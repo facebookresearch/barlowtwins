@@ -86,6 +86,8 @@ https://github.com/yaohungt/Barlow-Twins-HSIC
 
 - A TensorFlow implementation of Barlow Twins on CIFAR-10, by Sayak Paul: https://github.com/sayakpaul/Barlow-Twins-TF
 
+- A [dlib implementation](http://dlib.net/ml.html#loss_barlow_twins_) of Barlow Twins, and an [example on CIFAR-10](http://dlib.net/dnn_self_supervised_learning_ex.cpp.html), by [Adrià Arrufat](https://github.com/arrufat)
+
 *[Let us know](mailto:jzb@fb.com,ljng@fb.com,imisra@fb.com,yann@fb.com,sdeny@fb.com?subject=[GitHub]%20Barlow%20Twins%20) about all the cool stuff you are able to do with Barlow Twins so that we can advertise it here!*
 
 ### License
